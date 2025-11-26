@@ -4,14 +4,21 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Product, ProductDocument } from './product.schema';
 
 @Injectable()
 export class ProductsFetcherService {
   private readonly logger = new Logger(ProductsFetcherService.name);
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    @InjectModel(Product.name)
+    private readonly productModel: Model<ProductDocument>,
+  ) {}
 
-  @Cron(CronExpression.EVERY_HOUR)
+  @Cron(CronExpression.EVERY_MINUTE)
   async fetchProductsHourly(): Promise<void> {
     const spaceId = process.env.CONTENTFUL_SPACE_ID!;
     const envId = process.env.CONTENTFUL_ENVIRONMENT!;
@@ -23,8 +30,55 @@ export class ProductsFetcherService {
       const response$ = this.httpService.get(url, {});
       const { data } = await firstValueFrom(response$);
 
-      this.logger.log('📦 Productos recibidos desde Contentful:');
-      console.log(JSON.stringify(data, null, 2));
+      this.logger.log(`📦 Productos recibidos: ${data.items?.length ?? 0}`);
+
+      for (const item of data.items ?? []) {
+        const contentfulId = item.sys?.id as string;
+
+        const fields = item.fields ?? {};
+
+        const sku = fields.sku as number | undefined;
+        const name = fields.name as string | undefined;
+        const brand = fields.brand as string | undefined;
+        const model = fields.model as string | undefined;
+        const category = fields.category as string | undefined;
+        const color = fields.color as string | undefined;
+        const price = fields.price as number | undefined;
+        const currency = fields.currency as string | undefined;
+        const stock = fields.stock as number | undefined;
+
+        // Si faltan datos clave, mejor los logueamos y seguimos
+        if (!contentfulId || sku === undefined || !name) {
+          this.logger.warn(
+            `Producto con datos incompletos. contentfulId=${contentfulId}, sku=${sku}, name=${name}`,
+          );
+          continue;
+        }
+
+        await this.productModel.updateOne(
+          { contentfulId },
+          {
+            $set: {
+              contentfulId,
+              sku,
+              name,
+              brand,
+              model,
+              category,
+              color,
+              price,
+              currency,
+              stock,
+              raw: item,
+            },
+          },
+          { upsert: true },
+        );
+      }
+
+      this.logger.log(
+        `✔️ Sync completado a las ${new Date().toLocaleTimeString()}`,
+      );
     } catch (error: any) {
       this.logger.error(
         `Error consultando Contentful: ${error.message ?? error}`,
