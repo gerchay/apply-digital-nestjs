@@ -18,7 +18,7 @@ export class ProductsFetcherService {
     private readonly productModel: Model<ProductDocument>,
   ) {}
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_HOUR)
   async fetchProductsHourly(): Promise<void> {
     const spaceId = process.env.CONTENTFUL_SPACE_ID!;
     const envId = process.env.CONTENTFUL_ENVIRONMENT!;
