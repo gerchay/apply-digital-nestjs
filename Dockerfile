@@ -1,23 +1,23 @@
-# Imagen base con Node LTS (Active LTS)
-FROM node:24-alpine
+FROM node:24-alpine AS builder
 
-# Crear directorio de trabajo
 WORKDIR /usr/src/app
 
-# Copiar package.json y package-lock.json/yarn.lock
 COPY package*.json ./
-
-# Instalar dependencias
 RUN npm install
 
-# Copiar el resto del código
 COPY . .
 
-# Compilar Nest a dist/
 RUN npm run build
 
-# Exponer el puerto de Nest
+FROM node:24-alpine AS runner
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+RUN npm install --omit=dev
+
+COPY --from=builder /usr/src/app/dist ./dist
+
 EXPOSE 3000
 
-# Comando de arranque en modo producción
-CMD ["npm", "run", "start:dev"]
+CMD ["node", "dist/main.js"]
