@@ -18,7 +18,7 @@ export class ProductsFetcherService {
     private readonly productModel: Model<ProductDocument>,
   ) {}
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_HOUR)
   async fetchProductsHourly(): Promise<void> {
     const spaceId = process.env.CONTENTFUL_SPACE_ID!;
     const envId = process.env.CONTENTFUL_ENVIRONMENT!;
@@ -30,7 +30,7 @@ export class ProductsFetcherService {
       const response$ = this.httpService.get(url, {});
       const { data } = await firstValueFrom(response$);
 
-      this.logger.log(`📦 Productos recibidos: ${data.items?.length ?? 0}`);
+      this.logger.log(`Productos recibidos: ${data.items?.length ?? 0}`);
 
       for (const item of data.items ?? []) {
         const contentfulId = item.sys?.id as string;
@@ -46,14 +46,6 @@ export class ProductsFetcherService {
         const price = fields.price as number | undefined;
         const currency = fields.currency as string | undefined;
         const stock = fields.stock as number | undefined;
-
-        // Si faltan datos clave, mejor los logueamos y seguimos
-        if (!contentfulId || sku === undefined || !name) {
-          this.logger.warn(
-            `Producto con datos incompletos. contentfulId=${contentfulId}, sku=${sku}, name=${name}`,
-          );
-          continue;
-        }
 
         await this.productModel.updateOne(
           { contentfulId },
@@ -77,7 +69,7 @@ export class ProductsFetcherService {
       }
 
       this.logger.log(
-        `✔️ Sync completado a las ${new Date().toLocaleTimeString()}`,
+        `Sync completado a las ${new Date().toLocaleTimeString()}`,
       );
     } catch (error: any) {
       this.logger.error(

@@ -6,40 +6,40 @@ export type ProductDocument = Product & Document;
 @Schema({ timestamps: true })
 export class Product {
   @Prop({ required: true, unique: true })
-  contentfulId: string; // sys.id de Contentful
+  contentfulId: string;
 
   @Prop({ required: true, unique: true })
-  sku: number; // fields.sku
+  sku: number;
 
   @Prop({ required: true })
-  name: string; // fields.name
+  name: string;
 
   @Prop()
-  brand?: string; // fields.brand
+  brand?: string;
 
   @Prop()
-  model?: string; // fields.model
+  model?: string;
 
   @Prop()
-  category?: string; // fields.category
+  category?: string;
 
   @Prop()
-  color?: string; // fields.color
+  color?: string;
 
   @Prop()
-  price?: number; // fields.price
+  price?: number;
 
   @Prop()
-  currency?: string; // fields.currency
+  currency?: string;
 
   @Prop()
-  stock?: number; // fields.stock
+  stock?: number;
 
   @Prop({ default: false })
-  deleted: boolean; // para el soft delete después
+  deleted: boolean;
 
   @Prop({ type: Object })
-  raw?: any; // guardamos el item completo por si hace falta para reportes
+  raw?: any;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
