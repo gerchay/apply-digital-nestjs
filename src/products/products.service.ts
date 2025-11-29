@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery } from 'mongoose';
 import { Product, ProductDocument } from './product.schema';
@@ -68,6 +68,24 @@ export class ProductsService {
         total,
         totalPages,
       },
+    };
+  }
+
+  async softDeleteById(id: string) {
+    const updated = await this.productModel.findByIdAndUpdate(
+      id,
+      { $set: { deleted: true } },
+      { new: true },
+    );
+
+    if (!updated) {
+      throw new NotFoundException(`Product with id ${id} not found`);
+    }
+
+    return {
+      success: true,
+      id: updated._id,
+      deleted: updated.deleted,
     };
   }
 }
